@@ -1,6 +1,7 @@
 #include "HyperparamLogLikelihood.h"
 #include <cmath>
 #include <limits>
+#include <memory.h>
 #include "AbstractGP.h"
 #include "KernelFunction.h"
 #include <gsl/gsl_math.h>
@@ -32,7 +33,10 @@ double HyperparamLogLikelihood::getValueAt(std::shared_ptr<std::vector<double> >
 	try {
 		lik = gp->getMarginalLikelihood();
 	}
-	catch (...) {
+	catch (const char* e) {
+		int err = strcmp(e, "cholesky");
+		if (err != 0)
+			throw e;
 	  //	  printf("Exception\n");
 	}
 	return lik;
@@ -51,7 +55,7 @@ std::shared_ptr<std::vector<double> > HyperparamLogLikelihood::getGradientAt(std
 		std::shared_ptr<std::vector<double> > grad = gp->getMarginalLikelihoodGradient();
 		return grad;
 	}
-	catch (char e) {
+	catch (const char e) {
 		throw (e);
 	}
 

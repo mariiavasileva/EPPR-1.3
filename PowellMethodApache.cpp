@@ -16,9 +16,14 @@ void handler(const char * reason,
 	int line,
 	int gsl_errno) {
 	int error = strcmp("matrix must be positive definite", reason);
-	if (0 == error) 
-		throw "matrix is not positive definite";
-	else
+	int error1 = strcmp("matrix is not positive definite", reason);
+	int error2 = strcmp("contraction failed", reason);
+	if (0 == error || 0 == error1)
+		throw "cholesky"; //"matrix is not positive definite";
+	else if (0 == error2) {
+		throw "gsl_multimin_fminimizer_iterate";
+	}
+
 	{
 		if (NULL != PowellMethodApache::old_handler)
 			PowellMethodApache::old_handler(reason, file, line, gsl_errno);
@@ -124,10 +129,19 @@ std::shared_ptr<PointValue> PowellMethodApache::optimise(std::shared_ptr<Objecti
   do
     {
       iter++;
-      status = gsl_multimin_fminimizer_iterate(s);
-	  double sz = gsl_multimin_fminimizer_size(s);
-      status = gsl_multimin_test_size (sz,
-                                       1e-8);
+	  try {
+		  status = gsl_multimin_fminimizer_iterate(s);
+		  double sz = gsl_multimin_fminimizer_size(s);
+		  status = gsl_multimin_test_size(sz,
+			  1e-8);
+	  }
+	  catch (const char* e) {
+		  int cind_err = strcmp("gsl_multimin_fminimizer_iterate", e);
+		  if (cind_err != 0)
+			  throw e;
+		  iter = 100500;
+		  break;
+	  }
     }
   while (iter < 1000 && status == GSL_CONTINUE);
 
